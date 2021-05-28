@@ -1,0 +1,166 @@
+﻿@{
+    ViewData["Title"] = "Cheapest Page";
+}
+
+<html>
+<head>
+    <script src="~/lib/jquery/dist/jquery.js"></script>
+    <style>
+
+
+        .celmain {
+            border-width: 1px;
+            border-style: solid;
+            padding: 5px;
+        }
+
+        .celheader {
+            font-weight: bold;
+            background-color: lightgrey;
+        }
+
+        .tblmain {
+            margin-top: 10px;
+        }
+
+        .divmain {
+            height: 30px;
+            background: lightgray;
+            margin-bottom: 10px;
+            padding: 5px;
+            width: fit-content;
+            min-width: 40px;
+        }
+
+        .seliti {
+            height: 30px;
+            min-width: 40px;
+        }
+
+        .btniti {
+            margin-left: 10px;
+        }
+
+        .btniti-first {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <b>Objective 3: Find the cheapest itinerary</b>
+    <hr />
+    From:
+    <select id="seliti_from" name="seliti_from" class="seliti">
+    </select>
+    To:
+    <select id="seliti_to" name="seliti_to" class="seliti">
+    </select>
+    <br />
+    <button type="button" name="btncreate" id="btncreate" class="btniti-first">Create Itinerary</button>
+    <table class="tblmain" id="tblitinerary" name="tblitinerary">
+        <thead>
+            <tr>
+                <td class="celmain celheader">From</td>
+                <td class="celmain celheader">To</td>
+                <td class="celmain celheader">Cheapest fare</td>
+            </tr>
+        </thead>
+        <tbody>
+            <!--- insert dynamic itinerary here ---->
+        </tbody>
+    </table>
+    <script>
+        /// object from code behind
+        let objitinerary = JSON.parse('@Html.Raw(ViewData["ItineraryList"])');
+
+        /// global to summary route value
+        let results = [];
+
+        $(document).ready(function () {
+            let select_from = $("#seliti_from");
+            let select_to = $("#seliti_to");
+
+            /// fill dropdown from object
+            $.each(objitinerary, function (index, itiitem) {
+                if (!$("#seliti_from option[value='" + itiitem.fromdata + "']").length) {
+                    select_from.append($("<option></option>").attr("value", itiitem.fromdata).text(itiitem.fromdata));
+                }
+                if (!$("#seliti_to option[value='" + itiitem.fromdata + "']").length) {
+                    select_to.append($("<option></option>").attr("value", itiitem.fromdata).text(itiitem.fromdata));
+                }
+            });
+        });
+
+        $("#btncreate").click(function () {
+            let from = $("#seliti_from").val();
+            let to = $("#seliti_to").val();
+            let count = objitinerary.length;
+            let itinerary = from;
+
+            /// set global value for starting
+            results = [];
+
+            /// recursive finding route
+            find_destination(from, to, 0, itinerary);
+
+            /// calculate result
+            let maxcost = 0;
+
+            maxcost = calculatemincost(results);
+
+            var newrow = "<tr><td class='celmain'>" + from + "</td><td class='celmain'>" + to + "</td><td class='celmain'>" + maxcost + "</td></tr>";
+            $("#tblitinerary tbody").append(newrow);
+        });
+
+        function find_destination(from, to, currentindex, itinerary) {
+            $.each(objitinerary, function (index, itiitem) {
+                if (itiitem.fromdata == from) {
+                    let n = itinerary.indexOf(itiitem.fromdata + '-' + itiitem.todata);
+                    if (n >= 0) {
+                        //alert('error');
+                        results.push('error');
+                    } else if (itiitem.todata == to) {
+                        itinerary = itinerary + '-' + itiitem.todata;
+                        //alert(itinerary + ':success');
+                        results.push(itinerary);
+                    } else {
+                        //alert(currentindex + ':' + index + ':' + itiitem.todata);
+                        find_destination(itiitem.todata, to, index, itinerary + '-' + itiitem.todata);
+                    }
+                }
+            });
+        }
+
+        function calculatemincost(totalarray) {
+            let mincost = 0;
+            let possibleroute = totalarray.filter(t => t != 'error');
+            $.each(possibleroute, function (index, itiitem) {
+                let currentcost = 0;
+                let totaliti = itiitem.split('-');
+
+                for (let index = 0; index < totaliti.length; ++index) {
+                    if ((index + 1) >= totaliti.length) {
+                        continue;
+                    }
+
+                    /// retrieve original and destination value
+                    let orig = totaliti[index];
+                    let dest = totaliti[index + 1];
+
+                    /// find in array
+                    var result = objitinerary.find(t => t.fromdata === orig && t.todata === dest);
+                    if (typeof result !== 'undefined') {
+                        currentcost += result.costdata;
+                    }
+                }
+
+                if ((mincost == 0) || (currentcost < mincost)) {
+                    mincost = currentcost;
+                }
+            });
+            //alert(mincost);
+            return mincost;
+        }
+    </script>
+</body>
+</html>

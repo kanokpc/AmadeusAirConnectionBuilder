@@ -1,0 +1,139 @@
+﻿@{
+    ViewData["Title"] = "Cost Page";
+}
+
+<html>
+<head>
+    <script src="~/lib/jquery/dist/jquery.js"></script>
+    <style>
+        .celmain {
+            border-width: 1px;
+            border-style: solid;
+            padding: 5px;
+        }
+        .celheader {
+            font-weight: bold;
+            background-color: lightgrey;
+        }
+        .tblmain {
+            margin-top: 10px;
+        }
+        .divmain {
+            height: 30px;
+            background: lightgray;
+            margin-bottom: 10px;
+            padding: 5px;
+            width: fit-content;
+            min-width: 40px;
+        }
+        .seliti {
+            height: 30px;
+            min-width: 40px;
+        }
+        .btniti {
+            margin-left: 10px;
+        }
+        .btniti-first {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <b>Objective 1: Cost of a given itinerary</b>
+    <hr />
+    <div id="divmain" name="divmain" class="divmain">
+    </div>
+    <select id="seliti" name="seliti" class="seliti">
+    </select>
+    <button type="button" name="btnnew" id="btnnew" class="btniti">+</button>
+    <br />
+    <button type="button" name="btncreate" id="btncreate" class="btniti-first">Create Itinerary</button>
+    <button type="button" name="btnclear" id="btnclear" class="btniti">Clear</button>
+    <table class="tblmain" id="tblitinerary" name="tblitinerary">
+        <thead>
+            <tr>
+                <td class="celmain celheader">Itinerary</td>
+                <td class="celmain celheader">Cost</td>
+            </tr>
+        </thead>
+        <tbody>
+            <!--- insert dynamic itinerary here ---->
+        </tbody>
+    </table>
+    <script>
+        /// object from code behind
+        let objitinerary = JSON.parse('@Html.Raw(ViewData["ItineraryList"])');
+
+        $(document).ready(function () {
+            let select = $("#seliti");
+
+            /// fill dropdown from object
+            $.each(objitinerary, function (index, itiitem) {
+                if (!$("#seliti option[value='" + itiitem.fromdata + "']").length) {
+                    select.append($("<option></option>").attr("value", itiitem.fromdata).text(itiitem.fromdata));
+                }
+            });
+        });
+
+        $("#btnclear").click(function () {
+            $("#divmain").empty();
+        });
+
+        $("#btnnew").click(function () {
+            let seldata = $("#seliti").val();
+            let elementcount = $("#divmain label").length;
+            if (elementcount > 0) {
+                $("#divmain").append('-');
+            }
+            $("#divmain").append('<label id="lbl">' + seldata + '</label>');
+        });
+
+        $("#btncreate").click(function () {
+            let origin = '';
+            let totaliti = '';
+            let totalcost = 0;
+            let totalmsg = '';
+            let iswrong = false;
+
+            $("#divmain").find("label[id^=lbl]").each(function () {
+                /// retrieve original and destination value
+                let orig = $(this).text();
+                let dest = $(this).next().text();
+
+                totaliti = (totaliti == '') ? orig : totaliti + '-' + orig;
+
+                /// if next is blank means last value
+                if (dest == '') {
+                    return false;
+                }
+
+                /// find in array
+                var result = objitinerary.find(t => t.fromdata === orig && t.todata === dest);
+
+                if (typeof result === "undefined") {
+                    iswrong = true;
+                } else {
+                    totalcost += result.costdata;
+                }
+            });
+
+            if (iswrong) {
+                totalmsg = 'No such itinerary';
+            } else {
+                totalmsg = totalcost.toString();
+            }
+
+            /// insert table
+            if ($("#divmain").find("label[id^=lbl]").length > 1) {
+                var newrow = "<tr><td class='celmain'>" + totaliti + "</td><td class='celmain'>" + totalmsg + "</td></tr>";
+                $("#tblitinerary tbody").append(newrow);
+            } else {
+                alert('Please choose itinerary!!!');
+            }
+
+            /// clear data
+            $("#divmain").empty();
+        });
+    </script>
+</body>
+</html>
